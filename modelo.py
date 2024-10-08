@@ -3,10 +3,45 @@ import sqlite3
 import re
 from tkinter import messagebox
 
+
+#decorador para manejar errores en las operaciones con la base de datos
+def manejar_errores(func):
+    def envoltura(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except sqlite3.Error as e:
+            messagebox.showerror("Error", f"Error: {e}")
+            
+    return envoltura
+
+# Decorador para validar campos de entrada (producto y stock)
+def validar_campos(func):
+    def envoltura(self, *args, **kwargs):
+        # Depuración: imprimir los argumentos recibidos
+        # Controlar la cantidad de argumentos
+        if len(args) == 3:  # Creando un nuevo producto
+            producto, descripcion, stock = args[0], args[1], args[2]
+            producto_id = None  # No hay ID en la creación
+        elif len(args) == 4:  # Modificando un producto existente
+            producto_id, producto, descripcion, stock = args[0], args[1], args[2], args[3]
+        else:
+            messagebox.showerror("Error", "Número de argumentos no válido.")
+            return
+        # Validar que el producto solo contenga caracteres alfanuméricos y que stock sea un número
+        if re.match("^[a-zA-Z0-9 ]+$", str(producto)) and isinstance(stock, int):
+            return func(self, *args, **kwargs)
+        else:
+            print(f"Validación fallida: {producto_id if producto_id else 'nuevo producto :'}, {producto}, {descripcion}, {stock}")  # Mensaje de depuración
+            messagebox.showerror("Error", "El 'producto' solo debe contener caracteres alfanuméricos y 'stock' debe ser un número.")
+    return envoltura
+
+
+
 class Modelo:
+    
     def __init__(self):
         self.crear_bd()
-
+    @manejar_errores
     def crear_bd(self):
         conexion = sqlite3.connect("stock.db")
         cursor = conexion.cursor()
@@ -23,23 +58,19 @@ class Modelo:
             cursor.execute("ALTER TABLE productos ADD COLUMN stock INTEGER NOT NULL DEFAULT 0")
             conexion.commit()
         conexion.close()
-
+	
+    @validar_campos
+    @manejar_errores
     def agregar_producto(self, producto, descripcion, stock):
-        if re.match("^[a-zA-Z0-9 ]+$", producto) and str(stock).isdigit():
-            try:
                 conexion = sqlite3.connect("stock.db")
                 cursor = conexion.cursor()
-                cursor.execute("INSERT INTO productos (producto, descripcion, stock) VALUES (?, ?, ?)",
-                               (producto, descripcion, int(stock)))
-                conexion.commit()
-                print(f"Producto agregado: {producto}, {descripcion}, {stock}")  # Mensaje de depuración
-            except sqlite3.Error as e:
-                messagebox.showerror("Error", f"Error al agregar el producto: {e}")
-            finally:
+                cursor.execute("INSERT INTO productos (producto, descripcion, stock) VALUES (?, ?, ?)",(producto, descripcion, int(stock)))
+                conexion.commit()                
                 conexion.close()
-        else:
-            messagebox.showerror("Error", "El 'producto' solo debe contener caracteres alfanuméricos y 'stock' debe ser un número.")
+                print(f"Producto agregado: {producto}, {descripcion}, {stock}")  # Mensaje de depuración
 
+
+    @manejar_errores
     def buscar_producto(self, termino):
         conexion = sqlite3.connect("stock.db")
         cursor = conexion.cursor()
@@ -48,48 +79,49 @@ class Modelo:
         conexion.close()
         return productos
 
+    @manejar_errores
     def borrar_producto(self, producto_id):
-        try:
             conexion = sqlite3.connect("stock.db")
             cursor = conexion.cursor()
             cursor.execute("DELETE FROM productos WHERE id = ?", (producto_id,))
             conexion.commit()
-        except sqlite3.Error as e:
-            messagebox.showerror("Error", f"Error al borrar el producto: {e}")
-        finally:
             conexion.close()
-
+            
+    @manejar_errores
     def vender_producto(self, producto_id, cantidad):
+        conexion = sqlite3.connect("stock.db")
+        cursor = conexion.cursor()
         try:
-            conexion = sqlite3.connect("stock.db")
-            cursor = conexion.cursor()
+            # Obtener el stock actual del producto
             cursor.execute("SELECT stock FROM productos WHERE id = ?", (producto_id,))
-            stock_actual = cursor.fetchone()[0]
+            stock_actual = cursor.fetchone()
+            
+            if stock_actual is None:
+                raise ValueError("Producto no encontrado.")  # Si el producto no existe
+
+            stock_actual = stock_actual[0]  # Obtener el valor del stock
             if stock_actual >= cantidad:
-                cursor.execute("UPDATE productos SET stock = stock - ? WHERE id = ?", (cantidad, producto_id))
-                conexion.commit()
+                total = stock_actual - cantidad
+                cursor.execute("UPDATE productos SET stock = ? WHERE id = ?", (total, producto_id))
+                conexion.commit()  # Asegúrate de hacer commit después de la actualización
             else:
-                messagebox.showerror("Error", "No hay suficiente stock disponible.")
-        except sqlite3.Error as e:
-            messagebox.showerror("Error", f"Error al vender el producto: {e}")
+                raise ValueError("No hay suficiente stock disponible.")
         finally:
             conexion.close()
-
+            
+    @validar_campos
+    @manejar_errores
     def modificar_producto(self, producto_id, nuevo_producto, nueva_descripcion, nuevo_stock):
-        if re.match("^[a-zA-Z0-9 ]+$", nuevo_producto) and str(nuevo_stock).isdigit():
-            try:
-                conexion = sqlite3.connect("stock.db")
-                cursor = conexion.cursor()
-                cursor.execute("UPDATE productos SET producto = ?, descripcion = ?, stock = ? WHERE id = ?",
-                               (nuevo_producto, nueva_descripcion, nuevo_stock, producto_id))
-                conexion.commit()
-            except sqlite3.Error as e:
-                messagebox.showerror("Error", f"Error al modificar el producto: {e}")
-            finally:
-                conexion.close()
-        else:
-            messagebox.showerror("Error", "El 'producto' solo debe contener caracteres alfanuméricos y 'stock' debe ser un número.")
+        print(f"Modificando producto ID: {producto_id}, nuevo_producto: {nuevo_producto}, nueva_descripcion: {nueva_descripcion}, nuevo_stock: {nuevo_stock}")
+        conexion = sqlite3.connect("stock.db")
+        cursor = conexion.cursor()
+        cursor.execute("UPDATE productos SET producto = ?, descripcion = ?, stock = ? WHERE id = ?", (nuevo_producto, nueva_descripcion, nuevo_stock, producto_id))
+        conexion.commit()
+        print("Cambios guardados en la base de datos.")
+        conexion.close()
 
+
+        
     def obtener_productos(self):
         conexion = sqlite3.connect("stock.db")
         cursor = conexion.cursor()
