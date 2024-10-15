@@ -41,6 +41,7 @@ class Modelo:
     
     def __init__(self):
         self.crear_bd()
+        
     @manejar_errores
     def crear_bd(self):
         conexion = sqlite3.connect("stock.db")

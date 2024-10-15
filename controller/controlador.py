@@ -1,21 +1,24 @@
-# La app se abre desde aca!
-from modelo import Modelo
-from vista import Vista
+from model.modelo import Modelo
+from view.vista import Vista
 from tkinter import messagebox
 
 class Controlador:
-    def __init__(self):
-        self.modelo = Modelo()
-        self.vista = Vista(self)
-        self.actualizar_lista()
+    def __init__(self, modelo):
+        self.modelo = modelo  # Usar el modelo pasado como argumento
+        self.vista = None
+
+    def asignar_vista(self, vista):
+        """Método para asignar la vista al controlador"""
+        self.vista = vista
 
     def agregar_producto_interfaz(self):
         producto = self.vista.entrada_producto.get().strip()
         descripcion = self.vista.entrada_descripcion.get().strip()
         stock = self.vista.entrada_stock.get().strip()
-        stock = int(stock)
-        #! Validar que los campos no esten no estén vacios y que el stock sea númerico
-        if producto and descripcion and stock:
+        
+        # Validar que los campos no estén vacíos y que el stock sea numérico
+        if producto and descripcion and stock.isdigit():
+            stock = int(stock)
             self.modelo.agregar_producto(producto, descripcion, stock)
             self.actualizar_lista()
         else:
@@ -59,43 +62,38 @@ class Controlador:
         except IndexError:
             messagebox.showerror("Error", "Por favor, selecciona un producto para vender.")
 
-
     def modificar_producto_interfaz(self):
         producto_id = self.vista.obtener_producto_seleccionado()
         if producto_id is None:
-            messagebox.showerror("Error", "Por favor, selecciona un producto para vender.")
+            messagebox.showerror("Error", "Por favor, selecciona un producto para modificar.")
             return  # Muestra error si no hay producto seleccionado
-        else:
-            try:   
-                
-                # Obtenemos los nuevos valores de los campos de entrada
-                nuevo_producto = self.vista.entrada_producto.get().strip()  # Eliminar espacios en blanco
-                nueva_descripcion = self.vista.entrada_descripcion.get().strip()
-                nuevo_stock = self.vista.entrada_stock.get().strip()
-                
-                
-                # Convertir el stock a entero
-                nuevo_stock = int(nuevo_stock)
-                # Llamada al método del modelo para modificar el producto
-                self.modelo.modificar_producto(producto_id, nuevo_producto, nueva_descripcion, nuevo_stock)
-                
-                # Actualizar la lista de productos
-                self.actualizar_lista()
+        
+        try:   
+            # Obtenemos los nuevos valores de los campos de entrada
+            nuevo_producto = self.vista.entrada_producto.get().strip()  # Eliminar espacios en blanco
+            nueva_descripcion = self.vista.entrada_descripcion.get().strip()
+            nuevo_stock = self.vista.entrada_stock.get().strip()
+            
+            # Validar que el stock sea numérico
+            if not nuevo_stock.isdigit():
+                messagebox.showerror("Error", "El stock debe ser un número válido.")
+                return
+            
+            # Convertir el stock a entero
+            nuevo_stock = int(nuevo_stock)
+            # Llamada al método del modelo para modificar el producto
+            self.modelo.modificar_producto(producto_id, nuevo_producto, nueva_descripcion, nuevo_stock)
+            # Actualizar la lista de productos
+            self.actualizar_lista()
 
-            except IndexError:
-                messagebox.showerror("Error", "Por favor, selecciona un producto para modificar.")
-            except ValueError:
-                messagebox.showerror("Error", "Por favor, introduce valores válidos.")
-
+        except IndexError:
+            messagebox.showerror("Error", "Por favor, selecciona un producto para modificar.")
+        except ValueError:
+            messagebox.showerror("Error", "Por favor, introduce valores válidos.")
 
     def actualizar_lista(self):
         productos = self.modelo.obtener_productos()
-        self.vista.actualizar_lista(productos)
-
-    def run(self):
-        self.vista.mainloop()
-
-if __name__ == "__main__":
-    app = Controlador()
-    app.run()
-
+        if self.vista:  # Asegurarse de que la vista esté asignada
+            self.vista.actualizar_lista(productos)
+        else:
+            print("Vista no asignada")
