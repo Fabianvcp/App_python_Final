@@ -42,7 +42,7 @@ class Vista:
         self.tree = ttk.Treeview(frame_principal, columns=("ID", "Producto", "Descripción", "Stock"), show="headings")
         
         estilo_tree = ttk.Style()
-        estilo_tree.configure("Treeview.Heading", font=("Arial", 10, "bold"), background="#003366", foreground="white")
+        estilo_tree.configure("Treeview.Heading", font=("Arial", 10, "bold"), background="#003366", foreground="black")
         estilo_tree.configure("Treeview", rowheight=25, font=("Arial", 10))
         self.tree.heading("ID", text="ID")
         self.tree.heading("Producto", text="Producto")
