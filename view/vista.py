@@ -6,6 +6,7 @@ from tkinter import messagebox
 class Vista:
     def __init__(self, controlador):
         self.controlador = controlador
+        self.controlador.asignar_vista(self)  # Asignar la vista al controlador
         self.ventana = tk.Tk()
         self.ventana.title("Gestión de Stock")
         self.ventana.geometry("880x650")
@@ -58,6 +59,13 @@ class Vista:
         menubar.add_cascade(label="Archivo", menu=archivo_menu)
         archivo_menu.add_command(label="Salir", accelerator="Ctrl+X", command=self.ventana.quit)
 
+
+
+    def actualizar(self):
+        """Método que actualiza la lista de productos en la vista."""
+        productos = self.controlador.obtener_productos()
+        self.actualizar_lista(productos)
+
     def actualizar_lista(self, productos):
         """Actualizar los productos mostrados en el Treeview."""
         # Limpiar el contenido actual del Treeview
@@ -75,6 +83,7 @@ class Vista:
         except IndexError:
             messagebox.showerror("Error", "Por favor, selecciona un producto.")
             return None
+        
     def cargar_producto_seleccionado(self, event):
         """Cargar el producto seleccionado en los campos de entrada."""
         selected_item = self.tree.selection()

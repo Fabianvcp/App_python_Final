@@ -41,6 +41,22 @@ class Modelo:
     
     def __init__(self):
         self.crear_bd()
+        self.observadores = []
+
+    def agregar_observador(self, observador):
+        """Agregar un observador a la lista."""
+        if observador not in self.observadores:
+            self.observadores.append(observador)
+
+    def eliminar_observador(self, observador):
+        """Eliminar un observador de la lista."""
+        if observador in self.observadores:
+            self.observadores.remove(observador)
+
+    def notificar_observadores(self):
+        """Notificar a todos los observadores registrados."""
+        for observador in self.observadores:
+            observador.actualizar()    
         
     @manejar_errores
     def crear_bd(self):
@@ -69,6 +85,7 @@ class Modelo:
                 conexion.commit()                
                 conexion.close()
                 print(f"Producto agregado: {producto}, {descripcion}, {stock}")  # Mensaje de depuración
+                self.notificar_observadores()  # Notificar observadores tras agregar el producto
 
 
     @manejar_errores
@@ -76,6 +93,15 @@ class Modelo:
         conexion = sqlite3.connect("stock.db")
         cursor = conexion.cursor()
         cursor.execute("SELECT * FROM productos WHERE producto LIKE ? OR descripcion LIKE ?", (f'%{termino}%', f'%{termino}%'))
+        productos = cursor.fetchall()
+        conexion.close()
+        return productos
+    
+    @manejar_errores                
+    def obtener_productos(self):
+        conexion = sqlite3.connect("stock.db")
+        cursor = conexion.cursor()
+        cursor.execute("SELECT * FROM productos")
         productos = cursor.fetchall()
         conexion.close()
         return productos
@@ -87,6 +113,7 @@ class Modelo:
             cursor.execute("DELETE FROM productos WHERE id = ?", (producto_id,))
             conexion.commit()
             conexion.close()
+            self.notificar_observadores()  # Notificar observadores tras borrar un producto
             
     @manejar_errores
     def vender_producto(self, producto_id, cantidad):
@@ -105,6 +132,7 @@ class Modelo:
                 total = stock_actual - cantidad
                 cursor.execute("UPDATE productos SET stock = ? WHERE id = ?", (total, producto_id))
                 conexion.commit()  # Asegúrate de hacer commit después de la actualización
+                self.notificar_observadores()  # Notifica a los observadores después de vender un producto
             else:
                 raise ValueError("No hay suficiente stock disponible.")
         finally:
@@ -120,16 +148,7 @@ class Modelo:
         conexion.commit()
         print("Cambios guardados en la base de datos.")
         conexion.close()
-
-
-        
-    def obtener_productos(self):
-        conexion = sqlite3.connect("stock.db")
-        cursor = conexion.cursor()
-        cursor.execute("SELECT * FROM productos")
-        productos = cursor.fetchall()
-        conexion.close()
-        return productos
+        self.notificar_observadores()  # Notifica a los observadores después de modificar un producto
 
 
 

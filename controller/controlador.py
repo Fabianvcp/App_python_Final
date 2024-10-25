@@ -10,6 +10,7 @@ class Controlador:
     def asignar_vista(self, vista):
         """Método para asignar la vista al controlador"""
         self.vista = vista
+        self.modelo.agregar_observador(self.vista)
 
     def agregar_producto_interfaz(self):
         producto = self.vista.entrada_producto.get().strip()
@@ -97,3 +98,6 @@ class Controlador:
             self.vista.actualizar_lista(productos)
         else:
             print("Vista no asignada")
+            
+    def obtener_productos(self):
+        return self.modelo.obtener_productos()
