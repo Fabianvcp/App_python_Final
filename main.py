@@ -11,7 +11,8 @@ def main():
 
     # Crear instancia de la vista, asignándole el controlador
     vista = Vista(controlador)
-
+    vista.actualizar()
+    
     # Ejecutar la interfaz de usuario
     vista.mainloop()
 

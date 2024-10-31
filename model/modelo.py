@@ -1,62 +1,24 @@
 # El modelo, conexion con la base de datos
 import sqlite3
-import re
-from tkinter import messagebox
-
-
-#decorador para manejar errores en las operaciones con la base de datos
-def manejar_errores(func):
-    def envoltura(self, *args, **kwargs):
-        try:
-            return func(self, *args, **kwargs)
-        except sqlite3.Error as e:
-            messagebox.showerror("Error", f"Error: {e}")
-            
-    return envoltura
-
-# Decorador para validar campos de entrada (producto y stock)
-def validar_campos(func):
-    def envoltura(self, *args, **kwargs):
-        # Depuración: imprimir los argumentos recibidos
-        # Controlar la cantidad de argumentos
-        if len(args) == 3:  # Creando un nuevo producto
-            producto, descripcion, stock = args[0], args[1], args[2]
-            producto_id = None  # No hay ID en la creación
-        elif len(args) == 4:  # Modificando un producto existente
-            producto_id, producto, descripcion, stock = args[0], args[1], args[2], args[3]
-        else:
-            messagebox.showerror("Error", "Número de argumentos no válido.")
-            return
-        # Validar que el producto solo contenga caracteres alfanuméricos y que stock sea un número
-        if re.match("^[a-zA-Z0-9 ]+$", str(producto)) and isinstance(stock, int):
-            return func(self, *args, **kwargs)
-        else:
-            print(f"Validación fallida: {producto_id if producto_id else 'nuevo producto :'}, {producto}, {descripcion}, {stock}")  # Mensaje de depuración
-            messagebox.showerror("Error", "El 'producto' solo debe contener caracteres alfanuméricos y 'stock' debe ser un número.")
-    return envoltura
-
+from model.decoradores import manejar_errores, validar_campos
+from model.observador import ObservadorConsola
 
 
 class Modelo:
     
     def __init__(self):
-        self.crear_bd()
-        self.observadores = []
+        self.crear_bd()       
+        self.agregar_observador(ObservadorConsola())
 
     def agregar_observador(self, observador):
         """Agregar un observador a la lista."""
         if observador not in self.observadores:
             self.observadores.append(observador)
 
-    def eliminar_observador(self, observador):
-        """Eliminar un observador de la lista."""
-        if observador in self.observadores:
-            self.observadores.remove(observador)
-
-    def notificar_observadores(self):
+    def notificar_observadores(self, accion, datos):
         """Notificar a todos los observadores registrados."""
         for observador in self.observadores:
-            observador.actualizar()    
+            observador.actualizar(accion, datos)
         
     @manejar_errores
     def crear_bd(self):
@@ -84,9 +46,7 @@ class Modelo:
                 cursor.execute("INSERT INTO productos (producto, descripcion, stock) VALUES (?, ?, ?)",(producto, descripcion, int(stock)))
                 conexion.commit()                
                 conexion.close()
-                print(f"Producto agregado: {producto}, {descripcion}, {stock}")  # Mensaje de depuración
-                self.notificar_observadores()  # Notificar observadores tras agregar el producto
-
+                self.notificar_observadores("Agregar Producto", {"producto": producto, "descripcion": descripcion, "stock": stock})
 
     @manejar_errores
     def buscar_producto(self, termino):
@@ -108,12 +68,16 @@ class Modelo:
 
     @manejar_errores
     def borrar_producto(self, producto_id):
-            conexion = sqlite3.connect("stock.db")
-            cursor = conexion.cursor()
+        conexion = sqlite3.connect("stock.db")
+        cursor = conexion.cursor()
+        cursor.execute("SELECT * FROM productos WHERE id = ?", (producto_id,))
+        producto = cursor.fetchone()
+        if producto:  # Solo notificar si el producto existe
             cursor.execute("DELETE FROM productos WHERE id = ?", (producto_id,))
             conexion.commit()
             conexion.close()
-            self.notificar_observadores()  # Notificar observadores tras borrar un producto
+            self.notificar_observadores("Borrar Producto", {"id": producto_id, "producto": producto})
+
             
     @manejar_errores
     def vender_producto(self, producto_id, cantidad):
@@ -141,14 +105,12 @@ class Modelo:
     @validar_campos
     @manejar_errores
     def modificar_producto(self, producto_id, nuevo_producto, nueva_descripcion, nuevo_stock):
-        print(f"Modificando producto ID: {producto_id}, nuevo_producto: {nuevo_producto}, nueva_descripcion: {nueva_descripcion}, nuevo_stock: {nuevo_stock}")
         conexion = sqlite3.connect("stock.db")
         cursor = conexion.cursor()
         cursor.execute("UPDATE productos SET producto = ?, descripcion = ?, stock = ? WHERE id = ?", (nuevo_producto, nueva_descripcion, nuevo_stock, producto_id))
         conexion.commit()
-        print("Cambios guardados en la base de datos.")
         conexion.close()
-        self.notificar_observadores()  # Notifica a los observadores después de modificar un producto
+        self.notificar_observadores("Modificar Producto", {"id": producto_id, "nuevo_producto": nuevo_producto, "nueva_descripcion": nueva_descripcion, "nuevo_stock": nuevo_stock})
 
 
 
