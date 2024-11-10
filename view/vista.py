@@ -2,7 +2,14 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
+from server import start_server
+import threading
 
+def iniciar_servidor():
+    servidor_thread = threading.Thread(target=start_server)
+    servidor_thread.daemon = True  # Se cierra cuando termina la aplicación
+    servidor_thread.start()
+    
 class Vista:
     def __init__(self, controlador):
         self.controlador = controlador
@@ -11,8 +18,9 @@ class Vista:
         self.ventana.title("Gestión de Stock")
         self.ventana.geometry("880x650")
         self.ventana.configure(bg="#DCE3F1")  # Fondo de la ventana en azul claro
-        self.crear_interfaz()
-
+        self.crear_interfaz()        
+        iniciar_servidor()
+        
     def crear_interfaz(self):
         # Crear el marco principal con colores y relleno
         frame_principal = tk.Frame(self.ventana, bg="#DCE3F1", padx=10, pady=10)

@@ -1,0 +1,3 @@
+[2024-11-10 17:11:48.730240] Datos actualizados: Vender Producto - {'id': 1, 'cantidad': 10, 'nuevo_stock': 5}
+[2024-11-10 17:11:56.874459] Datos actualizados: Modificar Producto - {'id': 1, 'nuevo_producto': 'Coca Cola', 'nueva_descripcion': 'Gaseosa Sabor cola', 'nuevo_stock': 50}
+[2024-11-10 17:12:01.867331] Datos actualizados: Borrar Producto - {'id': 3, 'producto': (3, '7up', 'Gaseosa Sabor Lima limon', 20)}
