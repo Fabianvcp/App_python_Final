@@ -61,10 +61,11 @@ class Vista:
 
 
 
-    def actualizar(self):
+    def actualizar(self, accion, datos):
         """Método que actualiza la lista de productos en la vista."""
         productos = self.controlador.obtener_productos()
         self.actualizar_lista(productos)
+        print(f"Actualización recibida en la vista: {accion} - {datos}")
 
     def actualizar_lista(self, productos):
         """Actualizar los productos mostrados en el Treeview."""

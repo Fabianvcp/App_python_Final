@@ -7,7 +7,8 @@ from model.observador import ObservadorConsola
 class Modelo:
     
     def __init__(self):
-        self.crear_bd()       
+        self.observadores = []
+        self.crear_bd()      
         self.agregar_observador(ObservadorConsola())
 
     def agregar_observador(self, observador):
@@ -96,7 +97,7 @@ class Modelo:
                 total = stock_actual - cantidad
                 cursor.execute("UPDATE productos SET stock = ? WHERE id = ?", (total, producto_id))
                 conexion.commit()  # Asegúrate de hacer commit después de la actualización
-                self.notificar_observadores()  # Notifica a los observadores después de vender un producto
+                self.notificar_observadores("Vender Producto", {"id": producto_id, "cantidad": cantidad, "nuevo_stock": total})  # Notifica a los observadores después de vender un producto
             else:
                 raise ValueError("No hay suficiente stock disponible.")
         finally:
